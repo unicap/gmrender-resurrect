@@ -378,6 +378,7 @@ static gboolean my_bus_callback(GstBus * bus, GstMessage * msg,
 
 static gchar *audio_sink = NULL;
 static gchar *audio_device = NULL;
+static gchar *audio_string_properties = NULL;
 static gchar *videosink = NULL;
 static double initial_db = 0.0;
 
@@ -389,6 +390,9 @@ static GOptionEntry option_entries[] = {
 	  NULL },
         { "gstout-audiodevice", 0, 0, G_OPTION_ARG_STRING, &audio_device,
           "GStreamer device for the given audiosink. ",
+	  NULL },
+        { "gstout-audiostringproperties", 0, 0, G_OPTION_ARG_STRING, &audio_string_properties,
+          "GObject string properties for the given audiosink. Key=Value pairs, comma separated.",
 	  NULL },
         { "gstout-videosink", 0, 0, G_OPTION_ARG_STRING, &videosink,
           "GStreamer video sink to use "
@@ -517,6 +521,20 @@ static int output_gstreamer_init(void)
 		} else {
 		  if (audio_device != NULL) {
 		    g_object_set (G_OBJECT(sink), "device", audio_device, NULL);
+		  }
+		  if (audio_string_properties != NULL) {
+		    gchar **opts = g_strsplit(audio_string_properties, ",", -1);
+		    gchar **opt;
+		    for (opt = opts; *opt; opt++){
+		      gchar **pair = g_strsplit(*opt, "=", 2);
+		      if (g_strv_length(pair) != 2){
+			Log_error("gstreamer", "Invalid key/value pair");
+		      } else {
+			g_object_set (sink, pair[0], pair[1], NULL);
+		      }
+		      g_strfreev(pair);
+		    }
+		    g_strfreev(opts);
 		  }
 		  g_object_set (G_OBJECT (player_), "audio-sink", sink, NULL);
 		}
